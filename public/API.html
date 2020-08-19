@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tapir API docs</title>
+    <style>
+        * {
+            font-family: Verdana;
+        }
+        .api-option {
+            padding: 8px 16px;
+        }
+        .api-option-optional {
+            color: #888;
+        }
+        .api-options {
+            padding: 16px;
+        }
+        .api-description {
+            padding: 0 16px 8px;
+        }
+        .api-option-required {
+            color: #a00;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .api-block {
+            margin: 64px 96px;
+        }
+        .api-block__title {
+            font-size: 64px;
+            margin: 64px 0 32px;
+            position: relative;
+            cursor: pointer;
+        }
+        .api-block__description {
+            font-size: 16px;
+            margin: 0 0 32px 0;
+        }
+        .api-block__collapser {
+            display: inline-block;
+            position: absolute;
+            left: -64px;
+            width: 64px;
+            text-align: center;
+        }
+        .api-block__collapser:before {
+            content: '–';
+        }
+        .api-block.collapsed .after-title {
+            display: none;
+        }
+        .api-block.collapsed .api-block__collapser:before {
+            content: '+';
+        }
+    </style>
+
+</head>
+<body>
+    $API$
+<script>
+  var toggle = function(el) {
+    el.parentNode.classList.toggle('collapsed')
+  }
+</script>
+</body>
+</html>

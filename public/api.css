@@ -1,0 +1,56 @@
+* {
+    font-family: Verdana;
+}
+.api-option {
+    padding: 8px 16px;
+}
+.api-option-optional {
+    color: #888;
+}
+.api-options {
+    padding: 16px;
+}
+.api-description {
+    padding: 0 16px 8px;
+}
+.api-option-required {
+    color: #a00;
+}
+body {
+    margin: 0;
+    padding: 0;
+}
+.crud-block {
+    margin: 64px 96px;
+}
+
+.crud-title {
+    font-size: 64px;
+    margin: 64px 0 32px;
+    position: relative;
+    cursor: pointer;
+}
+.crud-description {
+    font-size: 16px;
+    margin: 0 0 32px 0;
+}
+.crud-collapser {
+    display: inline-block;
+    position: absolute;
+    left: -64px;
+    width: 64px;
+    text-align: center;
+}
+
+.crud-collapser:before {
+    content: '–';
+}
+.api-option-default {
+    color: #a524cb;
+}
+.crud-block.collapsed .after-title {
+    display: none;
+}
+.crud-block.collapsed .crud-collapser:before {
+    content: '+';
+}
