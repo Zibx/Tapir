@@ -52,6 +52,8 @@ const mappers = {
 	},
 	Any: ( t ) => t
 };
+var fs = require('fs');
+var path = require('path');
 const parseArgs = function( req, res, opts, body ) {
 	const query = Object.assign( {}, body, req.params, req.query );
 	const args = {};
@@ -94,8 +96,6 @@ const parseArgs = function( req, res, opts, body ) {
 
 	return args;
 };
-var fs = require( 'fs' );
-var logStream = fs.createWriteStream( "/tmp/kus-quizard.txt", { flags: 'a' } );
 
 function getDate( date ) {
 	if( date instanceof Date ) {
@@ -111,30 +111,6 @@ function getDate( date ) {
 	} else {
 		return date;
 	}
-}
-
-const months = [
-	'January',
-	'February',
-	'March',
-	'April',
-	'May',
-	'June',
-	'Jule',
-	'August',
-	'September',
-	'October',
-	'November',
-	'December'
-];
-const shortMonths = months.map( function( name ) {
-	return name.substr( 0, 3 );
-} );
-shortMonths[ 8 ] = 'Sept';
-
-function humanDate( date ) {
-	let d = getDate( date );
-	return [ d.day, shortMonths[ d.month ], d.year ].join( ' ' );
 }
 
 var globalAPI = {};
@@ -154,24 +130,51 @@ var Tapir = function( cfg ) {
 	}
 
 	var routesConsumer = function( routes ) {
-		exports.api2routes( routes, cfg.router, cfg );
+		var plainRoutes = {};
+		if(cfg.docs){
+			routes[cfg.docs] = {
+				method: 'GET',
+				headers: {"Content-Type": "text/html; charset=utf-8"},
+				description: 'Route to this Tapir generated documentation',
+				fn: function(req, res){
+					return fs.readFileSync(path.join(__dirname,'public','API.html'), 'utf-8')
+						.replace('$API$', exports.api2html(plainRoutes));
+				}
+			}
+		}
+
+		plainRoutes = exports.api2routes( routes, cfg.router, cfg );
+
 	};
 
 	return routesConsumer;
 };
 Tapir.defaults = {
 	timeout: 30000,
+	headers: {"Content-Type": "application/json; charset=utf-8"}
+};
 
+var Group = function(a,b,c) {
+	if(!(this instanceof Group)){
+		return new Group(a,b,c);
+	}
+	this.description = a;
+	this.routes = b;
+};
+Group.prototype = {
+	description: null,
+	routes: {}
 };
 
 var exports = module.exports = {
+	Group: Group,
 	mappers: mappers,
 	tapir: Tapir,
 	api2html: function( apis ) {
 		var out = [];
 
-		var cruds = {
-			'zz%%': { crud: { title: '… other' }, items: [] }
+		var blocks = {
+			'zz%%': { block: { title: '… other' }, items: [] }
 		};
 		for( let key in apis ) {
 
@@ -189,44 +192,44 @@ var exports = module.exports = {
 				key = '/' + key;
 			}
 
-			if( 'crud' in api ) {
-				var crud = api.crud;
-				if( !( crud.title in cruds ) ) {
-					cruds[ crud.title ] = { crud: crud, items: [] };
+			if( 'block' in api ) {
+				var block = api.block;
+				if( !( block.title in blocks ) ) {
+					blocks[ block.title ] = { block: block, items: [] };
 				}
-				cruds[ crud.title ].items.push( {
+				blocks[ block.title ].items.push( {
 					key: key,
 					api: api
 				} );
 			} else {
-				cruds[ 'zz%%' ].items.push( {
+				blocks[ 'zz%%' ].items.push( {
 					key: key,
 					api: api
 				} );
 			}
 		}
 		var list = Object
-			.keys( cruds )
+			.keys( blocks )
 			.sort()
-			.map( key => cruds[ key ] );
+			.map( key => blocks[ key ] );
 
 		for( var i = 0, _i = list.length; i < _i; i++ ) {
 			var listElement = list[ i ];
 			var items = listElement.items;
 			if( items.length === 0 )
 				continue;
-			out.push( '<div class="crud-block collapsed">' );
+			out.push( '<div class="api-block collapsed">' );
 
-			if( listElement.crud.title ) {
-				out.push( '<div class="crud-title" onclick="toggle(this)"><div class="crud-collapser"></div>' + listElement.crud.title + '</div>' );
+			if( listElement.block.title ) {
+				out.push( '<div class="api-block__title" onclick="toggle(this)"><div class="api-block__collapser"></div>' + listElement.block.title + '</div>' );
 			}
 			out.push( '<div class="after-title">' );
 
-			if( listElement.crud.description ) {
-				out.push( '<div class="crud-description">' + listElement.crud.description + '</div>' );
+			if( listElement.block.description ) {
+				out.push( '<div class="api-block__description">' + listElement.block.description + '</div>' );
 			}
 
-			out.push( '<div class="crud-content">' );
+			out.push( '<div class="api-block__content">' );
 
 
 			for( var j = 0, _j = items.length; j < _j; j++ ) {
@@ -240,7 +243,7 @@ var exports = module.exports = {
 				var optionNames = Object.keys( api.options || {} );
 
 				out.push( `<div class="api"><H2>${api.method} ${key}</H2>
-<div class="api-description">${api.summary}</div>
+${api.description?`<div class="api-description">${api.description}</div>`:''}
   ${optionNames.length > 0 ? `
     <div class="api-options"><span class="api-options-title">Options:</span>
     ${optionNames.map( optName => {
@@ -249,6 +252,7 @@ var exports = module.exports = {
     <span class="api-option-name">${optName}</span>
     <span class="api-option-type">${opt.type.name || opt.type}</span>
     ${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
+    ${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
     &nbsp;— <span class="api-option-description">${opt.description}</span>
     </div>`;
 					} ).join( '' )}
@@ -269,170 +273,222 @@ var exports = module.exports = {
 		return out.join( '' )
 	},
 	api2routes: function( apis, router, cfg ) {
-
+		var routes = {};
 		cfg = Object.assign( {}, Tapir.defaults, cfg );
 
-		for( let key in apis ) {
-			var tokens = key.split( ':' );
-
-
-			let api = apis[ key ], args = {};
-
-			if( tokens[ 0 ].toUpperCase() in methodsHash ) {
-				api.method = tokens[ 0 ];
-				key = tokens.slice( 1 ).join( ':' );
+		for( let blockName in apis ) {
+			let maybeBlock = apis[ blockName ];
+			let block;
+			let blockInfo = { title: '… other' };
+			if(maybeBlock instanceof Group){
+				block = maybeBlock.routes;
+				blockInfo = maybeBlock;
+				blockInfo.title = blockName;
+			}else{
+				block = {};
+				block[blockName] = maybeBlock;
+				blockInfo = { title: '… other' }
 			}
 
-			if( key[ 0 ] !== '/' ) {
-				key = '/' + key;
-			}
+			for(let key in block) {
 
-			var pointer = globalAPI;
+				let api = block[ key ], args = {};
 
-			router[ api.method.toLowerCase() ]( key, async function( req, res, next ) {
-				let timeout;
+				routes[key] = api;
 
-				if( 'middleware' in api ) {
-					!Array.isArray( api.middleware ) && ( api.middleware = [ api.middleware ] );
+				if(!('block' in api)){
+					api.block = blockInfo;
 				}
 
-				if( 'middlewareAuth' in api ) {
-					!Array.isArray( api.middlewareAuth ) && ( api.middlewareAuth = [ api.middlewareAuth ] );
-					api.middleware = api.middlewareAuth.concat( api.middleware || [] );
+				var tokens = key.split( ':' );
+
+				if( tokens[ 0 ].toUpperCase() in methodsHash ) {
+					api.method = tokens[ 0 ];
+					key = tokens.slice( 1 ).join( ':' );
 				}
 
-				if( !api.raw ) {
-					timeout = setTimeout( () => {
-						res.status( 408 );
-						res.end( '{"error": true, "data": "Timeout"}' );
-						try {
-							res.connection.destroy();
-						} catch( e ) {
-
-						}
-					}, 'timeout' in api ? api.timeout : cfg.timeout );
-
-
-					if( req.method !== 'GET' ) {
-						try {
-							args.body = await new Promise( function( r, j ) {
-								var body = '';
-
-								req.on( 'data', function( data ) {
-									body += data;
-
-									// Too much POST data, kill the connection!
-									// 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
-									if( body.length > 1e6 ) {
-										req.connection.destroy();
-										j();
-									}
-								} );
-
-								req.on( 'end', function() {
-									try {
-										r( body === '' ? void 0 : JSON.parse( body ) );
-									} catch( e ) {
-										console.error( e )
-										j( body );
-									}
-								} );
-							} )
-						} catch( e ) {
-							args.body = null;
-						}
-					}
-
-					try {
-						args = parseArgs( req, res, api.options, args.body || {} );
-					} catch( e ) {
-
-						return res.end( 'Errors:\n' + e.map( e => '\t' + e ).join( '\n' ) )
-					}
-
-					if( api.nolog ) {
-						console.log( api.method, key );
-					} else {
-						console.log( api.method, key, JSON.stringify( args ) );
-					}
-
-
-					res.header( "Content-Type", "application/json; charset=utf-8" );
+				if( key[ 0 ] !== '/' ) {
+					key = '/' + key;
 				}
-				try {
-					if( api.auth ) {
-						if( !( await api.auth( args, req, res ) ) ) {
-							throw new Error( 'Very bad auth' );
-						}
-					}
-					let result;
+
+				var pointer = globalAPI;
+				if(!('method' in api)){
+					throw new Error('Route method is not specified for route '+ key)
+				}
+				router[ api.method.toLowerCase() ]( key, async function( req, res, next ) {
+					let timeout;
 
 					if( 'middleware' in api ) {
-						result = await new Promise( ( r, j ) => {
-							res.on( 'end', () => clearTimeout( timeout ) );
-							api.middleware( req, res, ( val ) => {
-								if( val instanceof Error ) {
-									j( val );
-								} else {
-									r( val );
+						!Array.isArray( api.middleware ) && ( api.middleware = [ api.middleware ] );
+					}
+
+					if( 'middlewareAuth' in api ) {
+						!Array.isArray( api.middlewareAuth ) && ( api.middlewareAuth = [ api.middlewareAuth ] );
+						api.middleware = api.middlewareAuth.concat( api.middleware || [] );
+					}
+
+					var timoutDelay = 'timeout' in api ? api.timeout : cfg.timeout;
+					if( timoutDelay !== false ) {
+						timeout = setTimeout( () => {
+							res.status( 408 );
+							res.end( '{"error": true, "data": "Timeout"}' );
+							try {
+								res.connection.destroy();
+							} catch( e ) {
+
+							}
+						}, timoutDelay );
+					}
+					let result;
+					let resultError, middlewareResult;
+					try {
+						if( 'middleware' in api ) {
+							result = await new Promise( ( r, j ) => {
+								res.on( 'end', () =>{ clearTimeout( timeout ); middlewareResult = true; r() });
+
+
+								var call = function( num ) {
+									var called = false;
+									if( num >= api.middleware.length )
+										return r();
+
+									api.middleware[ num ].call( api, req, res, ( val ) => {
+										if( called )
+											return;
+										called = true;
+
+										if( val instanceof Error ) {
+											j( val );
+										}
+
+										call( num + 1 );
+									} );
 								}
-							}, args );
-						} );
+								call( 0 );
+							} );
+						}
+					} catch( e ) {
+						resultError = e;
 					}
 
-					if( 'fn' in api ) {
-						result = await api.fn( args, req, res, next );
+					if( !api.raw ) {
+						if( req.method !== 'GET' ) {
+							try {
+								const rawBody = await new Promise( function( r, j ) {
+									if( req.body ) {
+										return r( JSON.stringify(req.body) );
+									}
+									var body = '';
+
+									req.on( 'data', function( data ) {
+										body += data;
+
+										// Too much POST data, kill the connection!
+										// 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
+										if( body.length > 1e6 ) {
+											req.connection.destroy();
+											j();
+										}
+									} );
+
+									req.on( 'end', function() {
+										r( body );
+									} );
+								} );
+
+								args.body = rawBody === '' ? void 0 : JSON.parse( rawBody );
+							} catch( e ) {
+								args.body = null;
+								resultError = e;
+							}
+						}
+
+						try {
+							args = parseArgs( req, res, api.options, args.body || {} );
+						} catch( e ) {
+
+							return res.end( 'Errors:\n' + e.map( e => '\t' + e ).join( '\n' ) )
+						}
+
+						if( api.nolog ) {
+							console.log( api.method, key );
+						} else {
+							console.log( api.method, key, JSON.stringify( args ) );
+						}
+
+
+					}
+					try {
+						if( api.auth ) {
+							if( !( await api.auth( args, req, res ) ) ) {
+								throw new Error( 'Very bad auth' );
+							}
+						}
+					} catch( e ) {
+						resultError = e;
+					}
+					try {
+
+						if( 'fn' in api ) {
+							result = await api.fn( args, req, res, next );
+						}
+					} catch( e ) {
+						resultError = e;
+					}
+					clearTimeout( timeout );
+					var header = api.header || cfg.header;
+					if(header){
+						for(var name in header){
+							res.header( name, header[name] );
+						}
 					}
 
-					// fs.writeFileSync('./data/tmp/full.json', JSON.stringify(data, null, 2))
-					logStream.write( `${humanDate( new Date() )} ${api.method}: ${key} ${JSON.stringify( args )}` )
-					//logStream.write(`${JSON.stringify(result.log, null,1)}\n`);
+					if( resultError ) {
+						const e = resultError;
+						if( req.headers.accept === 'application/json' ) {
+							res.end( JSON.stringify( { error: true, data: e.message, stack: e.stack } ) );
+						} else {
+							res.end( e.message + '\n' + e.stack );
+						}
+					} else if(!middlewareResult) {
 
-					res.end( typeof result === 'string' ? result : JSON.stringify( result, null, 1 ), 'utf-8' );
-					clearTimeout( timeout )
-				} catch( e ) {
+						res.end( typeof result === 'string' ? result : JSON.stringify( result, null, 1 ), 'utf-8' );
 
-					logStream.write( `${humanDate( new Date() )} ${api.method}: ${key} ${JSON.stringify( args )}` )
-					logStream.write( `ERROR: ${e.message + '\n' + e.stack}\n\n` )
+					}
 
-					if( req.headers.accept === 'application/json' ) {
-						res.end( JSON.stringify( { error: true, data: e.message, stack: e.stack } ) );
-					} else {
-						res.end( e.message + '\n' + e.stack );
+				} );
+
+				tokens = key.substr( 1 ).split( '/' ).filter( String );
+
+				var lastPointer;
+				for( var i = 0, _i = tokens.length; i < _i; i++ ) {
+					if( i === 0 && tokens[ i ] === 'api' )
+						continue;
+					if( tokens[ i ][ 0 ] === ':' )
+						continue
+					pointer = pointer[ tokens[ i ] ] || ( pointer[ tokens[ i ] ] = {} );
+					if( i < _i - 1 ) {
+						lastPointer = pointer;
 					}
 				}
-			} );
 
-			tokens = key.substr( 1 ).split( '/' ).filter( String );
+				var fn = async function( args ) {
+					try {
+						return await api.fn( args || {} );
+					} catch( e ) {
+						throw e;
+					}
+				};
 
-			var lastPointer;
-			for( var i = 0, _i = tokens.length; i < _i; i++ ) {
-				if( i === 0 && tokens[ i ] === 'api' )
-					continue;
-				if( tokens[ i ][ 0 ] === ':' )
-					continue
-				pointer = pointer[ tokens[ i ] ] || ( pointer[ tokens[ i ] ] = {} );
-				if( i < _i - 1 ) {
-					lastPointer = pointer;
+				if( api.shortcut === false ) {
+					lastPointer[ tokens[ tokens.length - 1 ] ] = fn;
+				} else {
+					pointer[ api.shortcut || api.method.toLowerCase() ] = fn;
 				}
 			}
-
-			var fn = async function( args ) {
-				try {
-					return await api.fn( args || {} );
-				} catch( e ) {
-					throw e;
-				}
-			};
-
-			if( api.shortcut === false ) {
-				lastPointer[ tokens[ tokens.length - 1 ] ] = fn;
-			} else {
-				pointer[ api.shortcut || api.method.toLowerCase() ] = fn;
-			}
-
-
 		}
+		return routes;
+
 	},
 	api: globalAPI
 };

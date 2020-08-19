@@ -91,7 +91,7 @@ Authorization checking function that can be async. If specified — should retur
 
 _Feel free to modify args object_
 
-### description \<String\>
+### `description` \<String\>
 
 
 ### `middleware` \<Function | [Function]\> 
