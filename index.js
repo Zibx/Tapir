@@ -250,9 +250,16 @@ var exports = module.exports = {
 				var optionNames = Object.keys( api.options || {} );
 
 var drawDataType = function(opt) {
-
-		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>
-${'of' in opt?` of `:''}`;
+		if(typeof opt === 'string' || !('type' in opt)){
+			opt = {type: opt}
+		}
+		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>`+
+			('of' in opt?` of ` +
+			(Array.isArray(opt.of)?opt.of:[opt.of])
+				.map(drawDataType)
+				.map((el,i,full)=>el+
+					(i<full.length-2?', ':i===full.length-2?' or ':''))
+				.join(''):'');
 };
 var drawOptions = function(options){
 	var optionNames = Object.keys( options || {} );
