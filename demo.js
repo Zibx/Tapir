@@ -46,6 +46,14 @@ api({
 				}
     		},
 			fn: (args)=>args//JSON.stringify(args, null, 2)
+		},
+		'POST:/api/goose': {
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
 		}
 	})
 });

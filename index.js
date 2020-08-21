@@ -251,8 +251,7 @@ var exports = module.exports = {
 
 var drawDataType = function(opt) {
 	if(opt.options){
-		return `<span class="api-option-type api-option-nested" onclick="toggle(this)">${opt.hint || opt.type.name || opt.type}
-</span>
+		return `<span class="api-option-type api-option-nested" onclick="toggle(this)">${opt.hint || opt.type.name || opt.type}</span>
 <div class="after-title">${drawOptions(opt.options)}</div>
 `;
 
