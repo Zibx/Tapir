@@ -251,10 +251,11 @@ var exports = module.exports = {
 
 var drawDataType = function(opt) {
 	if(opt.options){
-		return `<span class="api-option-type api-option-nested" onclick="toggle(this)">${opt.hint || opt.type.name || opt.type}
-</span>
-<div class="after-title">${drawOptions(opt.options)}</div>
-`;
+		return `<div class="api-option-nested" onclick="toggle(this)">
+<div class="api-block__collapser"></div>
+	<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>
+	<div class="after-title">${drawOptions(opt.options)}</div>
+</div>`;
 
 	}else {
 		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>`;
@@ -280,7 +281,7 @@ var drawOptions = function(options){
     </div>`;
 	} ).join( '' );
 }
-				out.push( `<div class="api"><H2>${api.method} ${key}</H2>
+				out.push( `<div class="api"><H2 class="request-type-${api.method.toLowerCase()}">${api.method} ${key}</H2>
 ${api.description?`<div class="api-description">${api.description}</div>`:''}
   ${optionNames.length > 0 ? `
     <div class="api-options"><span class="api-options-title">Options:</span>

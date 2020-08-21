@@ -30,7 +30,7 @@
             margin: 64px 96px;
         }
         .api-block__title {
-            font-size: 64px;
+            font-size: 32px;
             margin: 64px 0 32px;
             position: relative;
             cursor: pointer;
@@ -60,16 +60,35 @@
         .collapsed .api-block__collapser:before {
             content: '+';
         }
-        .api-option > .after-title {
+        .api-option-nested > .after-title {
             position: absolute;
             background: #fff;
             padding: 8px 4px;
             z-index: 1;
-            box-shadow: black 2px 2px 8px 0px;
+            box-shadow: #ab6b468f 1px 2px 6px 0px;
+            border-radius: 8px;
+            top: 0;
+            min-width: 20vw;
         }
         .api-option-nested {
             border-bottom: 2px dotted #f0a316;
             cursor: pointer;
+            position: relative;
+            display: inline-block;
+            margin-left: 16px;
+        }
+        .api-option-nested .api-block__collapser {
+            left: -16px;
+            width: 16px;
+        }
+        .api-option-nested .api-option {
+            padding: 0 16px;
+        }
+        h2.request-type-delete {
+            color: #f00
+        }
+        .api h2 {
+            display: inline-block;
         }
     </style>
 

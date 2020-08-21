@@ -52,4 +52,6 @@ api({
 
 app.use(router);
 
-app.listen(8666);
+var DEMO_PORT = 8666;
+app.listen(DEMO_PORT);
+console.log('Demo api is listening on '+ DEMO_PORT);
