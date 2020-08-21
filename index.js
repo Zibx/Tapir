@@ -85,10 +85,16 @@ const parseArgs = function( req, res, opts, body ) {
 			}
 			continue
 		}
+
+		var type = opts[ k ].type;
+		if(typeof type !== 'string') {
+			type = type.name;
+		}
+
 		try {
-			args[ k ] = mappers[ opts[ k ].type.name ]( query[ k ] )
+			args[ k ] = mappers[ type ]( query[ k ] )
 		} catch( e ) {
-			errs.push( `Argument \`${k}\` (${opts[ k ].type.name}) type mismatch: ${e.message}` );
+			errs.push( `Argument \`${k}\` (${type}) type mismatch: ${e.message}` );
 		}
 	}
 	if( errs.length )
@@ -151,15 +157,16 @@ var Tapir = function( cfg ) {
 };
 Tapir.defaults = {
 	timeout: 30000,
+	docs: '/api',
 	headers: {"Content-Type": "application/json; charset=utf-8"}
 };
 
-var Group = function(a,b,c) {
+var Group = function(description, routes) {
 	if(!(this instanceof Group)){
-		return new Group(a,b,c);
+		return new Group(description, routes);
 	}
-	this.description = a;
-	this.routes = b;
+	this.description = description;
+	this.routes = routes;
 };
 Group.prototype = {
 	description: null,
@@ -242,20 +249,42 @@ var exports = module.exports = {
 
 				var optionNames = Object.keys( api.options || {} );
 
+var drawDataType = function(opt) {
+	if(opt.options){
+		return `<span class="api-option-type api-option-nested" onclick="toggle(this)">${opt.hint || opt.type.name || opt.type}
+</span>
+<div class="after-title">${drawOptions(opt.options)}</div>
+`;
+
+	}else {
+		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>`;
+	}
+};
+var drawOptions = function(options){
+	var optionNames = Object.keys( options || {} );
+
+	return optionNames.map( optName => {
+		let opt = options[ optName ];
+
+		let of = '';
+		if('of' in opt){
+
+		}
+
+		return `<div class="api-option collapsed">
+    <span class="api-option-name">${optName}</span>
+    ${drawDataType(opt)}
+    ${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
+    ${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
+    ${opt.description? `&nbsp;— <span class="api-option-description">${opt.description}</span>`:''}
+    </div>`;
+	} ).join( '' );
+}
 				out.push( `<div class="api"><H2>${api.method} ${key}</H2>
 ${api.description?`<div class="api-description">${api.description}</div>`:''}
   ${optionNames.length > 0 ? `
     <div class="api-options"><span class="api-options-title">Options:</span>
-    ${optionNames.map( optName => {
-						let opt = api.options[ optName ];
-						return `<div class="api-option">
-    <span class="api-option-name">${optName}</span>
-    <span class="api-option-type">${opt.type.name || opt.type}</span>
-    ${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
-    ${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
-    &nbsp;— <span class="api-option-description">${opt.description}</span>
-    </div>`;
-					} ).join( '' )}
+    ${drawOptions(api.options)}
     </div>` :
 					''}
 

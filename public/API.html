@@ -49,11 +49,27 @@
         .api-block__collapser:before {
             content: '–';
         }
-        .api-block.collapsed .after-title {
+        .api-option-type {
+            font-style: italic;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .collapsed .after-title {
             display: none;
         }
-        .api-block.collapsed .api-block__collapser:before {
+        .collapsed .api-block__collapser:before {
             content: '+';
+        }
+        .api-option > .after-title {
+            position: absolute;
+            background: #fff;
+            padding: 8px 4px;
+            z-index: 1;
+            box-shadow: black 2px 2px 8px 0px;
+        }
+        .api-option-nested {
+            border-bottom: 2px dotted #f0a316;
+            cursor: pointer;
         }
     </style>
 
