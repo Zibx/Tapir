@@ -120,7 +120,7 @@ function getDate( date ) {
 }
 
 var globalAPI = {};
-var methodsHash = 'GET,POST,UPDATE,DELETE,PUT'
+var methodsHash = 'GET,POST,UPDATE,DELETE,PUT,HEAD,TRACE,OPTIONS,CONNECT'
 	.split( ',' )
 	.reduce( function( s, k ) {
 		s[ k ] = 1;
@@ -250,16 +250,9 @@ var exports = module.exports = {
 				var optionNames = Object.keys( api.options || {} );
 
 var drawDataType = function(opt) {
-	if(opt.options){
-		return `<div class="api-option-nested" onclick="toggle(this)">
-<div class="api-block__collapser"></div>
-	<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>
-	<div class="after-title">${drawOptions(opt.options)}</div>
-</div>`;
 
-	}else {
-		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>`;
-	}
+		return `<span class="api-option-type">${opt.hint || opt.type.name || opt.type}</span>
+${'of' in opt?` of `:''}`;
 };
 var drawOptions = function(options){
 	var optionNames = Object.keys( options || {} );
@@ -271,20 +264,24 @@ var drawOptions = function(options){
 		if('of' in opt){
 
 		}
-
+		let nested = opt.options;
 		return `<div class="api-option collapsed">
-    <span class="api-option-name">${optName}</span>
-    ${drawDataType(opt)}
-    ${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
-    ${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
-    ${opt.description? `&nbsp;— <span class="api-option-description">${opt.description}</span>`:''}
+		<div class="api-option-row"${nested?' onclick="toggle(this)"':''}>
+				${nested?`<div class="api-block__collapser"></div>`:''}
+			<span class="api-option-name">${optName}</span>
+			${drawDataType(opt)}
+			${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
+			${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
+			${opt.description? `&nbsp;— <span class="api-option-description">${opt.description}</span>`:''}
+    </div>
+    ${nested?`<div class="after-title">${drawOptions( opt.options )}</div>`:''}    
     </div>`;
 	} ).join( '' );
 }
-				out.push( `<div class="api"><H2 class="request-type-${api.method.toLowerCase()}">${api.method} ${key}</H2>
+				out.push( `<div class="api"><H2 class="request-type request-type-${api.method.toLowerCase()}">${api.method} ${key}</H2>
 ${api.description?`<div class="api-description">${api.description}</div>`:''}
   ${optionNames.length > 0 ? `
-    <div class="api-options"><span class="api-options-title">Options:</span>
+    <div class="api-options"><span class="api-options-title">Arguments:</span>
     ${drawOptions(api.options)}
     </div>` :
 					''}

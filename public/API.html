@@ -15,6 +15,7 @@
         }
         .api-options {
             padding: 16px;
+            position: relative;
         }
         .api-description {
             padding: 0 16px 8px;
@@ -75,21 +76,40 @@
             cursor: pointer;
             position: relative;
             display: inline-block;
-            margin-left: 16px;
         }
-        .api-option-nested .api-block__collapser {
-            left: -16px;
+        .api-option .api-block__collapser {
+            left: -4px;
             width: 16px;
         }
         .api-option-nested .api-option {
             padding: 0 16px;
         }
-        h2.request-type-delete {
-            color: #f00
-        }
+
         .api h2 {
             display: inline-block;
         }
+        .request-type {
+            padding: 8px 16px;
+        }
+
+        .request-type-get {
+            background: #71d9e4;
+        }
+        .request-type-post {
+            background: #a2e471;
+        }
+        .request-type-delete {
+            /*background: #ff5e00;*/
+            background: #e47c71;
+        }
+        .request-type-put {
+            background: #e471d6;
+        }
+        .request-type-options {background: #f7f7f7;border: 1px solid #ccc;}
+        .request-type-head {background: #c1bf00;border: 1px solid #d5a000;}
+        .request-type-trace {background: #008ac1;border: 1px solid #0055d5;}
+        .request-type-connect {background: #77c100;border: 1px solid #0ed500;}
+
     </style>
 
 </head>

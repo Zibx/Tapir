@@ -46,7 +46,51 @@ api({
 				}
     		},
 			fn: (args)=>args//JSON.stringify(args, null, 2)
-		}
+		},
+		'GET:/api/goose': {
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
+		},
+		'DELETE:/api/goose': {
+    		description: 'If you wish to get rid of the goose',
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
+		},
+		'PUT:/api/goose': {
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
+		},
+		'OPTIONS:/api/goose': {
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
+		},
+		'HEAD:/api/goose': {
+    		options: {
+    			khm: {type: 'Any', hint: 'Khe', options: {
+    				oh: {type: String},
+					ah: {type: Boolean}
+				}
+			}}
+		},
+		'CONNECT:/api/goose': {},
+		'TRACE:/api/goose': {},
+
 	})
 });
 
