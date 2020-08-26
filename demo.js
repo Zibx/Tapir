@@ -9,8 +9,9 @@ const app = new App(),
 	});
 
 api({
-    'Some routes': Tapir.Group(`This is some <b>routes</b>`, {
+    'Some routes': Tapir.Group({description: `This is some <b>routes</b>`, collapsed: false}, {
     	'POST:/api/route1': {
+    		description: 'Update something ',
     		options: {
     			data:{
     				type: 'Any',
@@ -18,10 +19,18 @@ api({
 					hint: 'Request data',
 					required: true,
 					options: {
-    					who: {type: String},
-    					when: {type: Date},
+						who: {type: String},
+						when: {type: Date},
 						what: {
-    						type: Array,
+							type: Object,
+							description: 'Internal',
+							options: {
+								subj: {type: String, description: 'subject name'},
+								subjType: {type: new Tapir.Enum('Cat', 'Dog', 'Elephant'), description: 'subject type'}
+							}
+						},
+						and: {
+								type: Array,
 							description: 'Array of numbers, actions or a Cat',
 							of: [
 								Number,
@@ -48,6 +57,7 @@ api({
 			fn: (args)=>args//JSON.stringify(args, null, 2)
 		},
 		'GET:/api/goose': {
+    		summary: 'List of geese',
     		options: {
     			khm: {type: 'Any', hint: 'Khe', options: {
     				oh: {type: String},

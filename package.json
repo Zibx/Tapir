@@ -21,5 +21,9 @@
     "nyc": "^15.1.0",
     "express": "*",
     "node-async-router": "^0.0.2"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "chai-http": "^4.3.0"
   }
 }

@@ -154,20 +154,20 @@ describe( 'methods call', function() {
 		assert.equal((await Tapir.api.get()).length > 1000, true);
 		await list['/app/demo']({
 			method: 'GET',
-		},{end: function(a) {
+		},{header: ()=>{}, status: ()=>{}, end: function(a) {
 			assert.equal(a.indexOf('Required argument str')>-1, true);
 		}})
 		await list['/app/demo']({
 			method: 'GET',
 			params: {num: '300', str: 'test'}
-		},{end: function(a) {
+		},{header: ()=>{}, status: ()=>{}, end: function(a) {
 				assert.equal(a, 'test');
 		}})
 
 		await list['/app/demo']({
 			method: 'GET',
 			params: {num: '3f+i00', str: 'test'}
-		},{end: function(a) {
+		},{header: ()=>{}, status: ()=>{}, end: function(a) {
 				assert.equal(a.indexOf('is not a number')>-1, true);
 
 			}})
@@ -177,7 +177,7 @@ describe( 'methods call', function() {
 			headers: {},
 			method: 'POST',
 			params: {num: '3f+i00', str: 'test'}
-		},{end: function(a) {
+		},{header: ()=>{}, status: ()=>{}, end: function(a) {
 				assert.equal(a.indexOf('is not specified')>-1, true);
 			}})
 
@@ -186,7 +186,7 @@ describe( 'methods call', function() {
 			headers: {},
 			method: 'POST',
 			//params: {num: '3f+i00', str: 'test'}
-		},{
+		},{header: ()=>{}, status: ()=>{}, 
 			l: {},
 			on: function(a,b){
 				(this.l[a] || (this.l[a] = [])).push(b);
@@ -205,7 +205,7 @@ describe( 'methods call', function() {
 			headers: {},
 			method: 'POST',
 			//params: {num: '3f+i00', str: 'test'}
-		},{
+		},{header: ()=>{}, status: ()=>{}, 
 			l: {},
 			on: function(a,b){
 				(this.l[a] || (this.l[a] = [])).push(b);

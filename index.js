@@ -1,11 +1,77 @@
+var DataType = function(name, cfg){
+
+
+	var ctor = function(){
+		this.ctor && this.ctor.apply(this, arguments);
+	};
+	// BEST INHERITANCE
+	cfg.name = name;
+	Object.assign(this, cfg);
+	name = cfg.name;
+	delete cfg.name;
+	Object.assign(ctor, cfg);
+	Object.defineProperty(ctor, 'name', {
+		writable: true,
+		value: name
+	});
+	ctor.prototype = this;
+	return ctor;
+};
+
+
 const mappers = {
-	String: ( t ) => {
+	OR: new DataType('OR', {
+		ctor: function(possible) {
+			this.possible = possible;
+		},
+		validate: function(val, schema, errs, path) {
+			for( var i = 0, _i = this.possible.length; i < _i; i++ ){
+				var possibleElement = this.possible[ i ];
+				try{
+					var subErs = [];
+					if( validateSingleValue( possibleElement, val, possibleElement, subErs, path ) ){
+						return val;
+					}
+				}catch(e){
+
+				}
+			}
+
+			throw new Error('`'+JSON.stringify(val)+'` does not match '+
+				this.possible.map(i=>i.name).join(' || '))
+
+		}
+	}),
+	Object: new DataType('Object', {
+		validate: function(val, schema, errs, path) {
+			if(typeof val !== 'object'){
+				throw new Error( '`' + JSON.stringify(val) + '` is not an object' )
+			}
+			if(schema.options){
+				return validate(val, schema.options, errs, path);
+			}
+			return val;
+		}
+	}),
+	Enum: new DataType('Enum', {
+		ctor: function() {
+			this.values = [].slice.call(arguments);
+			this.valuesHash = this.values.reduce((s, k)=>{s[k] = k; return s;}, {})
+		},
+		validate: function(val) {
+			if(!(val in this.valuesHash)){
+				throw new Error('Enum does not match `'+val+'`')
+			}
+			return this.valuesHash[val];
+		}
+	}),
+	String: new DataType('String', {validate: ( t ) => {
 		if( typeof t !== 'string' ) {
 			throw new Error( '`' + t + '` is not a string' )
 		}
 		return t;
-	},
-	Boolean: ( t ) => {
+	}}),
+	Boolean: new DataType('Boolean', {validate: ( t ) => {
 		if( '1,true,yes,yep,y'.split( ',' ).indexOf( t ) > -1 || t === 1 )
 			return true;
 		if( '0,false,n,no,nope,null'.split( ',' ).indexOf( t ) > -1 || t === 0 )
@@ -15,8 +81,8 @@ const mappers = {
 			throw new Error( '`' + t + '` is not boolean' )
 		}
 		return t;
-	},
-	Number: ( t ) => {
+	}}),
+	Number: new DataType('Number', {validate: ( t ) => {
 		if( typeof t !== 'number' ) {
 			let x = parseFloat( t )
 			if( x == t )
@@ -25,8 +91,8 @@ const mappers = {
 			throw new Error( '`' + t + '` is not a number' )
 		}
 		return t;
-	},
-	Array: ( t ) => {
+	}}),
+	Array: new DataType('Array', {validate: ( t ) => {
 		try {
 			if( Array.isArray( t ) )
 				return t;
@@ -38,8 +104,8 @@ const mappers = {
 			throw new Error( '`' + t + '` is not an Array' )
 
 		}
-	},
-	Date: ( t ) => {
+	}}),
+	Date: new DataType('Date', {validate: ( t ) => {
 		try {
 			var d = new Date( t );
 			if( isNaN( +d ) ) {
@@ -49,54 +115,104 @@ const mappers = {
 		} catch( e ) {
 			throw new Error( '`' + t + '` invalid Date' )
 		}
-	},
-	Any: ( t ) => t
+	}}),
+	Any: new DataType('Any', {validate: ( t ) => t})
 };
 var fs = require('fs');
 var path = require('path');
-const parseArgs = function( req, res, opts, body ) {
-	const query = Object.assign( {}, body, req.params, req.query );
-	const args = {};
-	const errs = [];
-	for( let k in opts ) if( opts.hasOwnProperty( k ) ) {
-		if( opts[ k ].required ) {
-			if( !( k in query ) ) {
-				errs.push( `Required argument ${k} (${opts[ k ].type.name}) is not specified` );
+const validate = function(obj, schema, errs, path) {
+
+	const out = {};
+
+	errs = errs || [];
+	path = path || []
+
+	for( let k in schema ) if( schema.hasOwnProperty( k ) ) {
+		if( schema[ k ].required ) {
+			if( !( k in obj ) ) {
+				errs.push( {
+					key: path.concat(k).join('.'),
+					type: schema[ k ].type.name,
+					description: `Required argument ${k} (${schema[ k ].type.name}) is not specified`
+				} );
 				continue;
 			}
 
 
-			if( query[ k ] === null || query[ k ] === void 0 ) {
-				if( opts[ k ].empty ) {
-					args[ k ] = query[ k ];
+			if( obj[ k ] === null || obj[ k ] === void 0 ) {
+				if( schema[ k ].empty ) {
+					out[ k ] = obj[ k ];
 					continue
 				} else {
-					errs.push( `Argument ${k} (${opts[ k ].type.name}) can not be empty` );
+					errs.push({
+						key: path.concat(k).join('.'),
+						type: schema[ k ].type.name,
+						description: `Argument ${k} (${schema[ k ].type.name}) can not be empty`
+					} );
 					continue
 				}
 			}
 		}
 
-		if( query[ k ] === null || query[ k ] === void 0 ) {
-			if( opts[ k ].default ) {
-				args[ k ] = opts[ k ].default;
+		if( obj[ k ] === null || obj[ k ] === void 0 ) {
+			if( schema[ k ].default ) {
+				out[ k ] = schema[ k ].default;
 			} else {
-				args[ k ] = query[ k ];
+				out[ k ] = obj[ k ];
 			}
 			continue
 		}
 
-		var type = opts[ k ].type;
-		if(typeof type !== 'string') {
+		var type = schema[ k ].type;
+
+
+		if(Array.isArray(type)){
+			type = schema[ k ].type = new mappers.OR(type);
+		}
+		try{
+			out[ k ] = validateSingleValue( type, obj[ k ], schema[ k ], errs, path.concat(k) )
+		}catch( e ){
+
+		}
+
+	}
+
+	return out;
+};
+const validateSingleValue = function(type, val, schema, errs, path) {
+
+
+	if(!(type instanceof DataType)){
+		if( typeof type !== 'string' ){
 			type = type.name;
 		}
 
-		try {
-			args[ k ] = mappers[ type ]( query[ k ] )
-		} catch( e ) {
-			errs.push( `Argument \`${k}\` (${type}) type mismatch: ${e.message}` );
+		if(!(type in mappers)){
+			errs.push(`Unknown argument type: ${path.join('.')}<${type}>`)
+			throw new Error();
+		}else{
+			type = mappers[type];
 		}
 	}
+	var typeName = type.name;
+
+	try{
+		return type.validate( val, schema , errs, path );
+	}catch( e ){
+		errs.push( {
+			key: path.join( '.' ),
+			type: typeName,
+			description: `Argument \`${path.join( '.' )}\` (${typeName}) type mismatch: ${e.message}`
+		});
+		throw new Error();
+	}
+};
+const parseArgs = function( req, res, opts, body ) {
+	const query = Object.assign( {}, body, req.params, req.query );
+
+	const errs = [];
+	const args = validate(query, opts, errs )
+
 	if( errs.length )
 		throw errs;
 
@@ -165,17 +281,24 @@ var Group = function(description, routes) {
 	if(!(this instanceof Group)){
 		return new Group(description, routes);
 	}
-	this.description = description;
+	if(typeof description !== 'string'){
+		Object.assign(this, description);
+	}else{
+		this.description = description;
+	}
 	this.routes = routes;
 };
 Group.prototype = {
 	description: null,
-	routes: {}
+	routes: {},
+	collapsed: true
 };
 
 var exports = module.exports = {
+	Enum: mappers.Enum,
 	Group: Group,
 	mappers: mappers,
+	Type: mappers,
 	tapir: Tapir,
 	api2html: function( apis ) {
 		var out = [];
@@ -225,15 +348,28 @@ var exports = module.exports = {
 			var items = listElement.items;
 			if( items.length === 0 )
 				continue;
-			out.push( '<div class="api-block collapsed">' );
+
+			var summary = listElement.block.summary, description = listElement.block.description;
+			if(!summary){
+				if(description && description.length < 100){
+					summary = description;
+					description = void 0;
+				}
+			}
+
+			out.push( '<div class="api-block'+(listElement.block.collapsed === false?'':' collapsed')+'">' );
 
 			if( listElement.block.title ) {
 				out.push( '<div class="api-block__title" onclick="toggle(this)"><div class="api-block__collapser"></div>' + listElement.block.title + '</div>' );
 			}
+			if( summary ) {
+				out.push( '<div class="api-block__summary">' + summary + '</div>' );
+			}
+
 			out.push( '<div class="after-title">' );
 
-			if( listElement.block.description ) {
-				out.push( '<div class="api-block__description">' + listElement.block.description + '</div>' );
+			if( description ) {
+				out.push( '<div class="api-block__description">' + description + '</div>' );
 			}
 
 			out.push( '<div class="api-block__content">' );
@@ -267,28 +403,35 @@ var drawOptions = function(options){
 	return optionNames.map( optName => {
 		let opt = options[ optName ];
 
-		let of = '';
-		if('of' in opt){
 
-		}
+
 		let nested = opt.options;
 		return `<div class="api-option collapsed">
-		<div class="api-option-row"${nested?' onclick="toggle(this)"':''}>
+		<div class="api-option-row${nested?' api-option__nested':''}"${nested?' onclick="toggle(this)"':''}>
 				${nested?`<div class="api-block__collapser"></div>`:''}
 			<span class="api-option-name">${optName}</span>
 			${drawDataType(opt)}
 			${opt.required ? '<span class="api-option-required">Required</span>' : '<span class="api-option-optional">Optional</span>'}
 			${'default' in opt ? '<span class="api-option-default">= '+(opt.default+'')+'</span>' : ''}
-			${opt.description? `&nbsp;— <span class="api-option-description">${opt.description}</span>`:''}
+			${opt.description? `&nbsp; <span class="api-option-description">${opt.description}</span>`:''}
     </div>
     ${nested?`<div class="after-title">${drawOptions( opt.options )}</div>`:''}    
     </div>`;
 	} ).join( '' );
 }
+var summary = api.summary, description = api.description;
+				if(!summary){
+					if(description && description.length < 100){
+						summary = description;
+						description = void 0;
+					}
+				}
 				out.push( `<div class="api"><H2 class="request-type request-type-${api.method.toLowerCase()}">${api.method} ${key}</H2>
-${api.description?`<div class="api-description">${api.description}</div>`:''}
+
+${summary?`<div class="api-summary">${summary}</div>`:''}
+${description?`<div class="api-description">${description}</div>`:''}
   ${optionNames.length > 0 ? `
-    <div class="api-options"><span class="api-options-title">Arguments:</span>
+    <div class="api-options"><span class="api-options-title">Arguments</span>
     ${drawOptions(api.options)}
     </div>` :
 					''}
@@ -437,11 +580,22 @@ ${api.description?`<div class="api-description">${api.description}</div>`:''}
 							}
 						}
 
+						var header = api.header || api.headers || cfg.header || cfg.headers;
+						if(header){
+							for(var name in header){
+								res.header( name, header[name] );
+							}
+						}
+
 						try {
 							args = parseArgs( req, res, api.options, args.body || {} );
 						} catch( e ) {
-
-							return res.end( 'Errors:\n' + e.map( e => '\t' + e ).join( '\n' ) )
+							res.status(400);
+							if( req.headers && req.headers.accept === 'application/json' ){
+								res.end(JSON.stringify( { error: true, data: e } ) );
+							}else{
+								return res.end( 'Errors:\n' + e.map( e => '\t' + e.description ).join( '\n' ) )
+							}
 						}
 
 						if( api.nolog ) {
@@ -470,19 +624,15 @@ ${api.description?`<div class="api-description">${api.description}</div>`:''}
 						resultError = e;
 					}
 					clearTimeout( timeout );
-					var header = api.header || cfg.header;
-					if(header){
-						for(var name in header){
-							res.header( name, header[name] );
-						}
-					}
+
 
 					if( resultError ) {
 						const e = resultError;
+						//res.status(400)
 						if( req.headers.accept === 'application/json' ) {
-							res.end( JSON.stringify( { error: true, data: e.message, stack: e.stack } ) );
+							res.end(JSON.stringify( { error: true, data: e.message, stack: e.stack } ) );
 						} else {
-							res.end( e.message + '\n' + e.stack );
+							res.end(e.message + '\n' + e.stack );
 						}
 					} else if(!middlewareResult) {
 
