@@ -549,9 +549,10 @@ ${description?`<div class="api-description">${description}</div>`:''}
 					}
 
 					if( !api.raw ) {
+						let rawBody;
 						if( req.method !== 'GET' ) {
 							try {
-								const rawBody = await new Promise( function( r, j ) {
+								rawBody = await new Promise( function( r, j ) {
 									if( req.body ) {
 										return r( JSON.stringify(req.body) );
 									}
@@ -588,7 +589,12 @@ ${description?`<div class="api-description">${description}</div>`:''}
 						}
 
 						try {
-							args = parseArgs( req, res, api.options, args.body || {} );
+							if(api.rawBody){
+								args = Object.assign({}, api.options, args.body);
+								args.$$rawBody = rawBody;
+							}else{
+								args = parseArgs( req, res, api.options, args.body || {} );
+							}
 						} catch( e ) {
 							res.status(400);
 							if( req.headers && req.headers.accept === 'application/json' ){
