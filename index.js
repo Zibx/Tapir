@@ -245,6 +245,13 @@ var methodsHash = 'GET,POST,UPDATE,DELETE,PUT,HEAD,TRACE,OPTIONS,CONNECT'
 
 
 var Tapir = function( cfg ) {
+	var routes = false;
+
+	if(!('router' in cfg)){
+		routes = cfg;
+		var Router = require('node-async-router');
+		cfg = {router: new Router()};
+	}
 
 	cfg = Object.assign( {}, Tapir.defaults, cfg || {} );
 	if( !( 'router' in cfg ) ) {
@@ -266,12 +273,17 @@ var Tapir = function( cfg ) {
 		}
 
 		plainRoutes = exports.api2routes( routes, cfg.router, cfg );
-
 	};
+
+	if(routes){
+		routesConsumer(routes);
+		return cfg.router;
+	}
 
 	return routesConsumer;
 };
 Tapir.defaults = {
+	pretty: false,
 	timeout: 30000,
 	docs: '/api',
 	headers: {"Content-Type": "application/json; charset=utf-8"}
@@ -642,7 +654,10 @@ ${description?`<div class="api-description">${description}</div>`:''}
 						}
 					} else if(!middlewareResult) {
 
-						res.end( typeof result === 'string' ? result : JSON.stringify( result, null, 1 ), 'utf-8' );
+						res.end( typeof result === 'string' ? result : (
+
+							JSON.stringify( result, null, cfg.pretty ? 1 : 0 )
+						), 'utf-8' );
 
 					}
 

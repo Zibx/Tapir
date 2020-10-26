@@ -1,6 +1,6 @@
 {
   "name": "api-tapir",
-  "version": "0.14.5",
+  "version": "0.15.1",
   "description": "API routes wrapper",
   "main": "index.js",
   "scripts": {
@@ -20,10 +20,10 @@
     "mocha": "^8.1.1",
     "nyc": "^15.1.0",
     "express": "*",
-    "node-async-router": "^0.0.2"
-  },
-  "dependencies": {
     "body-parser": "^1.19.0",
     "chai-http": "^4.3.0"
+  },
+  "dependencies": {
+    "node-async-router": "^0.0.2"
   }
 }
