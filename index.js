@@ -519,9 +519,9 @@ ${description?`<div class="api-description">${description}</div>`:''}
 					var timoutDelay = 'timeout' in api ? api.timeout : cfg.timeout;
 					if( timoutDelay !== false ) {
 						timeout = setTimeout( () => {
-							res.status( 408 );
-							res.end( '{"error": true, "data": "Timeout"}' );
 							try {
+								res.status( 408 );
+								res.end( '{"error": true, "data": "Timeout"}' );
 								res.connection.destroy();
 							} catch( e ) {
 
