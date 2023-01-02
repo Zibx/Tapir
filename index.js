@@ -520,6 +520,9 @@ ${description?`<div class="api-description">${description}</div>`:''}
 					if( timoutDelay !== false ) {
 						timeout = setTimeout( () => {
 							try {
+								if(res.destroyed || res.finished){
+									return console.log('ERR 84: Check write after end')
+								}
 								res.status( 408 );
 								res.end( '{"error": true, "data": "Timeout"}' );
 								res.connection.destroy();
@@ -608,6 +611,9 @@ ${description?`<div class="api-description">${description}</div>`:''}
 								args = parseArgs( req, res, api.options, args.body || {} );
 							}
 						} catch( e ) {
+							if(res.destroyed || res.finished){
+								return console.log('ERR 31: Check write after end')
+							}
 							res.status(400);
 							if( req.headers && req.headers.accept === 'application/json' ){
 								res.end(JSON.stringify( { error: true, data: e } ) );
@@ -647,15 +653,21 @@ ${description?`<div class="api-description">${description}</div>`:''}
 					if( resultError ) {
 						const e = resultError;
 						//res.status(400)
+						if(res.destroyed || res.finished){
+							return console.log('ERR 14: Check write after end')
+						}
+
 						if( req.headers.accept === 'application/json' ) {
 							res.end(JSON.stringify( { error: true, data: e.message, stack: e.stack } ) );
 						} else {
 							res.end(e.message + '\n' + e.stack );
 						}
 					} else if(!middlewareResult) {
+						if(res.destroyed || res.finished){
+							return console.log('ERR 17: Check write after end')
+						}
 
 						res.end( typeof result === 'string' ? result : (
-
 							JSON.stringify( result, null, cfg.pretty ? 1 : 0 )
 						), 'utf-8' );
 
