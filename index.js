@@ -567,29 +567,29 @@ ${description?`<div class="api-description">${description}</div>`:''}
 						let rawBody;
 						if( req.method !== 'GET' ) {
 							try {
-								rawBody = await new Promise( function( r, j ) {
-									if( req.body ) {
-										return r( JSON.stringify(req.body) );
-									}
-									var body = '';
+                var maxBodyLength = api.maxBodyLength || 1e6;
+                rawBody = await new Promise( function( r, j ) {
+                  if( req.body ) {
+                    return r( JSON.stringify(req.body) );
+                  }
+                  var body = '';
 
-									req.on( 'data', function( data ) {
-										body += data;
+                  req.on( 'data', function( data ) {
+                    body += data;
 
-										// Too much POST data, kill the connection!
-										// 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
-										if( body.length > 1e6 ) {
-											req.connection.destroy();
-											j();
-										}
-									} );
+                    if( body.length > maxBodyLength ) {
+                      console.log('Request excided the maximum size of '+ maxBodyLength +' bytes!');
+                      req.connection.destroy();
+                      j();
+                    }
+                  } );
 
-									req.on( 'end', function() {
-										r( body );
-									} );
-								} );
+                  req.on( 'end', function() {
+                    r( body );
+                  } );
+                } );
 
-								args.body = rawBody === '' ? void 0 : JSON.parse( rawBody );
+                args.body = rawBody === '' ? void 0 : JSON.parse( rawBody );
 							} catch( e ) {
 								args.body = null;
 								resultError = e;

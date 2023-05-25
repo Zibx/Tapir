@@ -102,3 +102,6 @@ Just glued before anything in `middleware`
 
 ### `timeout` \<Number\> = Tapir.config.timeout ≈ 30000
 Request timeout duration in `milliseconds`. 
+
+### `maxBodyLength` \<Number\> = 1e6
+Specifies maximum request size
