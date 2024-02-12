@@ -12,12 +12,20 @@ We made too much express routing and at one point we made a wrapper that handles
  * API docs generation
  * API testing
  
- Yes, our tapirs know that there is a swagger snorkelling out there. The Swagger is a great tool if you like to write (or generate) that enormous configuration files.
+ Yes, our tapirs know that there is a swagger snorkeling out there. The Swagger is a great tool if you like to write (or generate) that enormous configuration files.
  
  Tapir loves juicy requests with a body filled with JSON. We would change this behaviour in future releases.
  
  # How to install
- 
+
+Tapir can be spawned just as any node.js package.
+
+```shell
+yarn add api-tapir
+```
+
+Feel free to use any package manager (npm, pnpm, yarn, etc.)
+
  # Simple example
 
  
